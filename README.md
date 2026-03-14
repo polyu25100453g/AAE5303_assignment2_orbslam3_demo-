@@ -351,8 +351,8 @@ Rotation drift rate:        171.56 deg/100m
 
 | Parameter | Value |
 |-----------|-------|
-| **Sim(3) scale correction** | ~0.61 (from evo_ape Umeyama alignment) |
-| **Sim(3) translation** | \([t_x,\, t_y,\, t_z]\) in ground-truth (ENU) frame, e.g. \(\sim(1.18\times 10^7,\, 2.47\times 10^6,\, -35.5)\) m (run evo_ape for exact values) |
+| **Sim(3) scale correction** | 0.61 |
+| **Sim(3) translation (m)** | [1.1776×10⁷, 2.4722×10⁶, −35.50] (in ground-truth ENU frame) |
 | **Association threshold** | \(t_{max\_diff}\) = 0.1 s |
 | **Association rate (Completeness)** | 95.09% |
 | **RPE distance delta** | 10 m |
