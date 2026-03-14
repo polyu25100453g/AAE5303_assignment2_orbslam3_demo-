@@ -26,7 +26,7 @@ import argparse
 import zipfile
 from dataclasses import dataclass
 from io import BytesIO
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 import numpy as np
 
@@ -42,10 +42,10 @@ class TumTrajectory:
 def generate_trajectory_evaluation_figure(
     gt_path: str,
     est_path: str,
-    evo_ape_zip_path: str,
     out_path: str,
     t_max_diff_s: float,
     title_suffix: str,
+    evo_ape_zip_path: Optional[str] = None,
 ) -> None:
     """
     Generate and save the standard 2x2 evaluation figure.
@@ -53,13 +53,16 @@ def generate_trajectory_evaluation_figure(
     Args:
         gt_path: Ground truth trajectory path (TUM format).
         est_path: Estimated trajectory path (TUM format).
-        evo_ape_zip_path: evo_ape --save_results zip containing alignment + errors.
         out_path: Output PNG path.
         t_max_diff_s: Association threshold (seconds). Used for matching poses
             for visualization. Should match the one used in evo.
-        title_suffix: Optional string to append to titles (e.g., dataset name).
+        title_suffix: Optional string to append to titles (e.g., " (HKisland_GNSS03)").
+        evo_ape_zip_path: Optional evo_ape --save_results zip. If missing or invalid,
+            Sim(3) and ATE are computed from the trajectories.
     """
-    import matplotlib.pyplot as plt  # local import to keep base deps minimal
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt  # noqa: E402
 
     gt = _load_tum_positions(gt_path)
     est = _load_tum_positions(est_path)
@@ -71,29 +74,39 @@ def generate_trajectory_evaluation_figure(
     gt_m = gt.p[gt_idx]
     est_m = est.p[est_idx]
 
-    sim3, ate_errors = _load_sim3_and_errors(evo_ape_zip_path)
+    sim3, ate_errors = _get_sim3_and_errors(evo_ape_zip_path, gt_m, est_m)
     est_aligned = _apply_sim3(sim3, est_m)
+
+    # Before alignment: each trajectory in its own frame (start at origin) so both visible
+    gt_before = gt_m - gt_m[0:1]
+    est_before = est_m - est_m[0:1]
+    # After alignment: common origin (first GT pose) to show overlap
+    origin = gt_m[0:1]
+    gt_plot = gt_m - origin
+    est_aligned_plot = est_aligned - origin
 
     # Plot setup
     fig, axes = plt.subplots(2, 2, figsize=(12, 12))
 
-    # 1) Before alignment
+    # 1) Before alignment — each at own origin so scale/rotation mismatch is visible
     ax = axes[0, 0]
     ax.set_title(f"2D Trajectory - Before Alignment{title_suffix}")
-    ax.plot(gt_m[:, 0], gt_m[:, 1], color="green", label="Ground Truth", linewidth=2)
-    ax.plot(est_m[:, 0], est_m[:, 1], color="red", linestyle="--", label="VO (Unaligned)", linewidth=1.5)
+    ax.plot(gt_before[:, 0], gt_before[:, 1], color="green", label="Ground Truth", linewidth=2)
+    ax.plot(est_before[:, 0], est_before[:, 1], color="red", linestyle="--", label="VO (Unaligned)", linewidth=1.5)
     ax.set_xlabel("X [m]")
     ax.set_ylabel("Y [m]")
+    ax.axis("equal")
     ax.grid(True, alpha=0.3)
     ax.legend(loc="best")
 
     # 2) After Sim(3) alignment
     ax = axes[0, 1]
     ax.set_title(f"2D Trajectory - After Sim(3) Alignment{title_suffix}")
-    ax.plot(gt_m[:, 0], gt_m[:, 1], color="green", label="Ground Truth", linewidth=2)
-    ax.plot(est_aligned[:, 0], est_aligned[:, 1], color="blue", label="VO (Aligned)", linewidth=1.5)
+    ax.plot(gt_plot[:, 0], gt_plot[:, 1], color="green", label="Ground Truth", linewidth=2)
+    ax.plot(est_aligned_plot[:, 0], est_aligned_plot[:, 1], color="blue", label="VO (Aligned)", linewidth=1.5)
     ax.set_xlabel("X [m]")
     ax.set_ylabel("Y [m]")
+    ax.axis("equal")
     ax.grid(True, alpha=0.3)
     ax.legend(loc="best")
 
@@ -129,29 +142,31 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Generate AAE5303 report figures (trajectory + ATE).")
     parser.add_argument("--gt", required=True, help="Ground truth trajectory (TUM format).")
     parser.add_argument("--est", required=True, help="Estimated trajectory (TUM format).")
-    parser.add_argument("--evo-ape-zip", required=True, help="evo_ape --save_results zip path.")
+    parser.add_argument("--evo-ape-zip", default="", help="Optional evo_ape --save_results zip path.")
     parser.add_argument("--out", required=True, help="Output figure path (.png).")
     parser.add_argument("--t-max-diff", type=float, default=0.1, help="Timestamp association threshold (seconds).")
-    parser.add_argument("--title-suffix", default="", help="Optional title suffix, e.g., ' (HKisland_GNSS03)'.")
+    parser.add_argument("--title-suffix", default="", help="Optional title suffix, e.g., 'HKisland_GNSS03'.")
     args = parser.parse_args()
 
-    title_suffix = f" {args.title_suffix}".rstrip()
+    title_suffix = f" {args.title_suffix}".strip()
     if title_suffix and not title_suffix.startswith("("):
-        title_suffix = f"({title_suffix})"
+        title_suffix = f" ({title_suffix})"
 
     generate_trajectory_evaluation_figure(
         gt_path=args.gt,
         est_path=args.est,
-        evo_ape_zip_path=args.evo_ape_zip,
         out_path=args.out,
         t_max_diff_s=args.t_max_diff,
-        title_suffix=("" if not title_suffix else f" {title_suffix}"),
+        title_suffix=title_suffix,
+        evo_ape_zip_path=args.evo_ape_zip or None,
     )
     return 0
 
 
 def _load_tum_positions(path: str) -> TumTrajectory:
-    data = np.loadtxt(path)
+    data = np.loadtxt(path, comments="#")
+    if data.size == 0 or data.ndim < 2:
+        raise RuntimeError(f"No valid TUM data in {path}")
     t = data[:, 0].astype(float)
     p = data[:, 1:4].astype(float)
     return TumTrajectory(t=t, p=p)
@@ -188,11 +203,60 @@ def _associate_by_time(t_gt: np.ndarray, t_est: np.ndarray, t_max_diff_s: float)
     return np.array(gt_idx, dtype=int), np.array(est_idx, dtype=int)
 
 
-def _load_sim3_and_errors(evo_ape_zip_path: str) -> Tuple[np.ndarray, np.ndarray]:
-    with zipfile.ZipFile(evo_ape_zip_path, "r") as zf:
-        sim3 = np.load(zf.open("alignment_transformation_sim3.npy"), allow_pickle=False)
-        err = np.load(zf.open("error_array.npy"), allow_pickle=False)
-    return sim3.astype(float), err.astype(float)
+def _umeyama_sim3(P_est: np.ndarray, P_gt: np.ndarray) -> np.ndarray:
+    """Compute Sim(3) (4x4) that maps P_est to P_gt (Nx3 each). Scale + R + t."""
+    src = P_est.T.astype(np.float64)
+    tgt = P_gt.T.astype(np.float64)
+    n = src.shape[1]
+    src_c = src - src.mean(axis=1, keepdims=True)
+    tgt_c = tgt - tgt.mean(axis=1, keepdims=True)
+    var_src = (src_c ** 2).sum() / n
+    H = src_c @ tgt_c.T / n
+    U, _, Vt = np.linalg.svd(H)
+    R = Vt.T @ U.T
+    if np.linalg.det(R) < 0:
+        Vt[-1, :] *= -1
+        R = Vt.T @ U.T
+    scale = np.sqrt((tgt_c ** 2).sum() / n) / np.sqrt(var_src + 1e-12)
+    t = tgt.mean(axis=1) - scale * (R @ src.mean(axis=1))
+    T = np.eye(4, dtype=np.float64)
+    T[:3, :3] = scale * R
+    T[:3, 3] = t
+    return T
+
+
+def _get_sim3_and_errors(
+    evo_ape_zip_path: Optional[str],
+    gt_m: np.ndarray,
+    est_m: np.ndarray,
+) -> Tuple[np.ndarray, np.ndarray]:
+    """Load Sim(3) and ATE from evo zip, or compute from matched trajectories."""
+    if evo_ape_zip_path:
+        try:
+            with zipfile.ZipFile(evo_ape_zip_path, "r") as zf:
+                names = zf.namelist()
+                sim3_key = "alignment_transformation_sim3.npy"
+                if sim3_key not in names:
+                    for n in names:
+                        if "sim3" in n.lower() or "transformation" in n.lower():
+                            sim3_key = n
+                            break
+                err_key = "error_array.npy"
+                if err_key not in names:
+                    for n in names:
+                        if "error" in n.lower():
+                            err_key = n
+                            break
+                sim3 = np.load(zf.open(sim3_key), allow_pickle=False).astype(float)
+                err = np.load(zf.open(err_key), allow_pickle=False).astype(float)
+            if sim3.shape == (4, 4) and len(err) == len(gt_m):
+                return sim3, err
+        except Exception:
+            pass
+    sim3 = _umeyama_sim3(est_m, gt_m)
+    est_aligned = _apply_sim3(sim3, est_m)
+    ate_errors = np.linalg.norm(est_aligned - gt_m, axis=1)
+    return sim3, ate_errors
 
 
 def _apply_sim3(sim3: np.ndarray, xyz: np.ndarray) -> np.ndarray:

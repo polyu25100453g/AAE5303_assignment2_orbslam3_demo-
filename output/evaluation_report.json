@@ -1,52 +1,16 @@
 {
-    "evaluation_summary": {
-        "dataset": "HKisland_GNSS03",
-        "source": "MARS-LVIG / UAVScenes",
-        "total_images": 3833,
-        "keyframes_output": 620,
-        "ground_truth_poses": 1955,
-        "matched_poses": 328,
-        "association_rate": 53.0,
-        "trajectory_length_m": 1901.88,
-        "duration_s": 390.78
-    },
-    "metrics": {
-        "ate": {
-            "rmse": 2.5335,
-            "mean": 2.3019,
-            "median": 2.0145,
-            "std": 1.0581,
-            "min": 0.9402,
-            "max": 5.9473,
-            "unit": "meters"
-        },
-        "rpe": {
-            "trans_rmse": 1.7309,
-            "trans_mean": 1.1978,
-            "trans_median": 0.9636,
-            "trans_std": 1.2496,
-            "delta_frames": 10,
-            "unit": "meters"
-        },
-        "scale_error": {
-            "scale_ratio": 0.9162,
-            "scale_drift_percent": 8.38,
-            "unit": "percentage"
-        }
-    },
-    "alignment": {
-        "method": "Sim(3)",
-        "estimated_scale": 1.0857,
-        "translation": [-0.486, 0.634, 0.909]
-    },
-    "baseline_config": {
-        "framework": "ORB-SLAM3",
-        "mode": "Monocular Visual Odometry",
-        "nFeatures": 1500,
-        "nLevels": 8,
-        "scaleFactor": 1.2,
-        "iniThFAST": 20,
-        "minThFAST": 7
-    }
+  "ate_mean_m": 28.026976400585255,
+  "ate_rmse_m": 37.14483193903032,
+  "ate_std_m": 24.376774471201966,
+  "completeness_pct": 95.08951406649616,
+  "delta_m": 10.0,
+  "gt_poses": 1955,
+  "matched_poses": 1859,
+  "rpe_rot_drift_deg_per_100m": 171.55716175727082,
+  "rpe_rot_mean_deg": 17.155716175727083,
+  "rpe_rot_rmse_deg": 34.85774073173568,
+  "rpe_trans_drift_m_per_m": 2.0612902059163325,
+  "rpe_trans_mean_m": 20.612902059163325,
+  "rpe_trans_rmse_m": 21.78217030740826,
+  "t_max_diff_s": 0.1
 }
-

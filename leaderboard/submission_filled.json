@@ -1,0 +1,10 @@
+{
+  "group_name": "Team Alpha",
+  "metrics": {
+    "ate_rmse_m": 37.14483193903032,
+    "completeness_pct": 95.08951406649616,
+    "rpe_rot_drift_deg_per_100m": 171.55716175727082,
+    "rpe_trans_drift_m_per_m": 2.0612902059163325
+  },
+  "project_private_repo_url": "https://github.com/yourusername/project.git"
+}
