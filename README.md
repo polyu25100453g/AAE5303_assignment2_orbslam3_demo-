@@ -424,12 +424,12 @@ This assignment demonstrates monocular Visual Odometry implementation using ORB-
 
 Four optimization directions, ordered by priority (impact and feasibility):
 
-| Priority | Action | Expected Improvement |
-|----------|--------|---------------------|
-| **1 (Highest)** | **Enable visual–inertial fusion (VIO)** — Use ORB-SLAM3 with IMU if hardware and assignment allow. | **50–70% ATE RMSE reduction**; observable metric scale; lower RPE translation/rotation drift (typical VIO vs VO on similar datasets). |
-| **2** | **Verify and refine camera calibration** — Re-estimate intrinsics and distortion (e.g. checkerboard) and ensure they match the exact camera and resolution. | **15–25% overall accuracy gain**; more stable tracking and fewer spurious pose jumps. |
-| **3** | **Tune ORB/FAST parameters** — Use `nFeatures` = 3500 and lower FAST thresholds (e.g. `iniThFAST` 12, `minThFAST` 4) via `docs/camera_config_mono_fallback.yaml`; optionally adjust `scaleFactor` / `nLevels`. | **~5–15% ATE reduction**; possible completeness gain (1–3%); fewer “Fail to track local map!” and map resets. |
-| **4** | **Enable loop closure / relocalization** — Switch from pure VO to full SLAM with loop detection and pose-graph optimization where supported. | **Bounded drift on long runs**; **20–40% ATE reduction** on segments with loop closures; more stable scale over time. |
+| Prio | Action | Expected Improvement |
+|:----:|--------|----------------------|
+| **1** | Enable VIO (IMU fusion) | **50–70%** ATE RMSE reduction; observable scale; lower RPE drift. |
+| **2** | Verify camera calibration (intrinsics + distortion) | **15–25%** accuracy gain; more stable tracking. |
+| **3** | Tune ORB/FAST (e.g. `camera_config_mono_fallback.yaml`: nFeatures=3500, lower FAST) | **~5–15%** ATE reduction; +1–3% completeness; fewer map resets. |
+| **4** | Enable loop closure / relocalization (full SLAM) | Bounded drift; **20–40%** ATE reduction on loop segments. |
 
 ---
 
