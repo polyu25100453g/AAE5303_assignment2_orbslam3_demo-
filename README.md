@@ -351,6 +351,8 @@ Rotation drift rate:        171.56 deg/100m
 
 | Parameter | Value |
 |-----------|-------|
+| **Sim(3) scale correction** | ~0.61 (from evo_ape Umeyama alignment) |
+| **Sim(3) translation** | \([t_x,\, t_y,\, t_z]\) in ground-truth (ENU) frame, e.g. \(\sim(1.18\times 10^7,\, 2.47\times 10^6,\, -35.5)\) m (run evo_ape for exact values) |
 | **Association threshold** | \(t_{max\_diff}\) = 0.1 s |
 | **Association rate (Completeness)** | 95.09% |
 | **RPE distance delta** | 10 m |
@@ -372,7 +374,7 @@ Rotation drift rate:        171.56 deg/100m
 
 ![Trajectory Evaluation](figures/trajectory_evaluation.png)
 
-This figure is generated from the same inputs used for evaluation (`ground_truth.txt` and `CameraTrajectory.txt`) and includes:
+This figure is generated from the same inputs used for evaluation (`ground_truth.txt` and `CameraTrajectory_sec.txt`) and includes:
 
 1. **Top-Left**: 2D trajectory before alignment (matched poses only). This reveals scale/rotation mismatch typical for monocular VO.
 2. **Top-Right**: 2D trajectory after Sim(3) alignment (scale corrected). Remaining discrepancy reflects drift and local tracking errors.
@@ -422,10 +424,10 @@ This assignment demonstrates monocular Visual Odometry implementation using ORB-
 
 | Priority | Action | Expected Improvement |
 |----------|--------|---------------------|
-| High | Increase `nFeatures` to 2000-2500 | 30-40% ATE reduction |
-| High | Lower FAST thresholds (15/5) | 20-30% RPE reduction |
-| Medium | Verify camera calibration | 15-25% overall improvement |
-| Low | Enable IMU fusion (VIO mode) | 50-70% accuracy improvement |
+| High | Try `nFeatures` = 3500 (e.g. `docs/camera_config_mono_fallback.yaml`) | May further improve completeness / reduce drift |
+| High | Fine-tune FAST thresholds (current 15/5) or scale pyramid | Better trade-off between robustness and accuracy |
+| Medium | Verify camera calibration and distortion | 15-25% overall improvement |
+| Low | Enable IMU fusion (VIO mode) if permitted | 50-70% accuracy improvement |
 
 ---
 
