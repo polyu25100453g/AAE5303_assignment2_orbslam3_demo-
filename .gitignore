@@ -31,3 +31,12 @@ Thumbs.db
 build/
 lib/
 
+# Generated trajectory and evaluation outputs (regenerate with pipeline)
+output/CameraTrajectory*.txt
+output/KeyFrameTrajectory.txt
+output/ground_truth.txt
+output/evo_results/
+
+# Config backup
+docs/*.bak
+

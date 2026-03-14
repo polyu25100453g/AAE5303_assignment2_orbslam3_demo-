@@ -236,6 +236,9 @@ MPLBACKEND=Agg python3 "${WORKSPACE}/scripts/generate_report_figures.py" \
   --title-suffix "HKisland_GNSS03" \
   --evo-ape-zip "${EVO_WORKDIR}/ate.zip"
 echo "Trajectory plot saved to ${OUTPUT_DIR}/trajectory.png"
+mkdir -p "${WORKSPACE}/figures"
+cp "${OUTPUT_DIR}/trajectory.png" "${WORKSPACE}/figures/trajectory_evaluation.png"
+echo "Copied to ${WORKSPACE}/figures/trajectory_evaluation.png (for README)"
 
 echo "================================================================================"
 echo "9) Generate Markdown report"
